@@ -53,11 +53,14 @@ class CampaignController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        // `dhikr` is REQUIRED — the creator MUST pick the exact dhikr every
+        // contributor will be locked to. Members never get a free-choice
+        // option in global or campaign contexts (client feedback).
         $data = $request->validate([
             'group_id'     => ['nullable', 'exists:groups,id'],
             'title'        => ['required', 'string', 'max:255'],
             'description'  => ['nullable', 'string'],
-            'dhikr'        => ['nullable', 'string', 'max:50'],
+            'dhikr'        => ['required', 'string', 'max:50'],
             'target_count' => ['required', 'integer', 'min:1'],
             'starts_at'    => ['nullable', 'date'],
             'ends_at'      => ['nullable', 'date', 'after_or_equal:starts_at'],
@@ -108,10 +111,13 @@ class CampaignController extends Controller
             abort(403, 'Only the creator can edit this campaign.');
         }
 
+        // dhikr: `sometimes required` so a PATCH that omits it doesn't
+        // accidentally wipe it — but if the field IS sent, it must be a
+        // real dhikr string (never null / empty).
         $data = $request->validate([
             'title'        => ['sometimes', 'required', 'string', 'max:255'],
             'description'  => ['nullable', 'string'],
-            'dhikr'        => ['nullable', 'string', 'max:50'],
+            'dhikr'        => ['sometimes', 'required', 'string', 'max:50'],
             'target_count' => ['sometimes', 'required', 'integer', 'min:1'],
             'starts_at'    => ['nullable', 'date'],
             'ends_at'      => ['nullable', 'date', 'after_or_equal:starts_at'],
