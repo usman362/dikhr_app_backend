@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\RevenueCatWebhookController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\UserStatsController;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,6 +18,30 @@ use Illuminate\Support\Facades\Route;
 | V1 API Routes
 |--------------------------------------------------------------------------
 */
+
+// ── Health check (public, unauthenticated) ─────────────────────────
+//
+// Used by load balancers, uptime monitors, and the mobile app's
+// "is the server reachable?" probe. Pings the database so a bad
+// connection / migration state still surfaces as unhealthy.
+Route::get('/health', function () {
+    try {
+        DB::connection()->getPdo();
+        $db = 'ok';
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'degraded',
+            'db'     => 'down',
+            'time'   => now()->toIso8601String(),
+        ], 503);
+    }
+    return response()->json([
+        'status'  => 'ok',
+        'db'      => $db,
+        'version' => 'v1',
+        'time'    => now()->toIso8601String(),
+    ]);
+});
 
 // ── Public (guest) — rate-limited for security ─────────────────────
 Route::middleware('throttle:auth')->group(function () {
@@ -33,12 +58,32 @@ Route::middleware('throttle:otp')->group(function () {
 // RevenueCat Webhook (public — secured by webhook secret)
 Route::post('/webhooks/revenuecat', [RevenueCatWebhookController::class, 'handle']);
 
-// ── Authenticated ───────────────────────────────────────────────────
+// ── Authenticated (no subscription required) ───────────────────────
+//
+// These routes work even when the user's trial has ended and they
+// have no active subscription. The mobile app needs them to:
+//   - log out from the locked screen
+//   - check who they are (so the paywall can greet them by name)
+//   - check subscription status (so the router knows where to send them)
+//   - complete a purchase (verify endpoint receives the receipt)
+//
+// Everything else is gated behind `active_access` below.
 Route::middleware('auth:sanctum')->group(function () {
-
-    // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me',      [AuthController::class, 'me']);
+
+    // Subscription Management — must be reachable from paywall
+    Route::get('/subscription/status',  [SubscriptionController::class, 'status']);
+    Route::post('/subscription/verify', [SubscriptionController::class, 'verify']);
+});
+
+// ── Authenticated + Active Subscription/Trial Required ─────────────
+//
+// Subscription-only model: every data route requires either an active
+// 7-day trial OR a paid subscription. `active_access` middleware
+// returns HTTP 402 with `subscription_required: true` when the user
+// has neither, and the mobile router redirects to the paywall.
+Route::middleware(['auth:sanctum', 'active_access'])->group(function () {
 
     // Groups
     Route::get('/groups',              [GroupController::class, 'index']);
@@ -75,16 +120,4 @@ Route::middleware('auth:sanctum')->group(function () {
     // Device Tokens (Push Notifications)
     Route::post('/device-tokens',   [DeviceTokenController::class, 'store']);
     Route::delete('/device-tokens', [DeviceTokenController::class, 'destroy']);
-
-    // Subscription Management
-    Route::get('/subscription/status',  [SubscriptionController::class, 'status']);
-    Route::post('/subscription/verify', [SubscriptionController::class, 'verify']);
-
-    // ── Premium-only features ─────────────────────────────────────
-    Route::middleware('premium')->group(function () {
-        // Premium: Create unlimited groups (free users limited to 3)
-        // Premium: Advanced analytics
-        // Premium: Ad-free experience (checked client-side)
-        // These gates are also enforced in controllers for flexibility
-    });
 });

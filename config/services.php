@@ -35,9 +35,10 @@ return [
         ],
     ],
 
-    'fcm' => [
-        'server_key' => env('FCM_SERVER_KEY'),
-    ],
+    // FCM legacy HTTP API config was removed — the placeholder service
+    // it pointed to was deprecated by Google in 2024. When push
+    // notifications are reimplemented (Firebase Admin SDK, FCM v1 API),
+    // add the JSON credentials path here under a 'firebase' key.
 
     'revenuecat' => [
         'api_key'        => env('REVENUECAT_API_KEY'),

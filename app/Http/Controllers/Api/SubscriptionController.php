@@ -9,7 +9,11 @@ use Illuminate\Http\Request;
 class SubscriptionController extends Controller
 {
     /**
-     * Get the current user's subscription status.
+     * Get the current user's access status.
+     *
+     * Returns the single source of truth the mobile app uses to decide
+     * whether to show the app or the paywall. Subscription-only model:
+     * the user can use the app if they're either on trial OR paid.
      */
     public function status(Request $request): JsonResponse
     {
@@ -17,8 +21,19 @@ class SubscriptionController extends Controller
         $subscription = $user->subscription;
 
         return response()->json([
-            'is_premium' => $user->isPremium(),
-            'subscription' => $subscription ? [
+            // The one boolean the mobile router cares about — true means
+            // "let them in", false means "show paywall".
+            'has_active_access'    => $user->hasActiveAccess(),
+
+            // Trial state (so mobile can show the countdown banner)
+            'is_on_trial'          => $user->isOnTrial(),
+            'trial_started_at'     => $user->trial_started_at?->toIso8601String(),
+            'trial_ends_at'        => $user->trial_ends_at?->toIso8601String(),
+            'trial_days_remaining' => $user->trialDaysRemaining(),
+
+            // Paid subscription state
+            'is_premium'           => $user->isPremium(),
+            'subscription'         => $subscription ? [
                 'status'               => $subscription->status,
                 'product_id'           => $subscription->product_id,
                 'store'                => $subscription->store,
@@ -32,9 +47,12 @@ class SubscriptionController extends Controller
     /**
      * Verify a purchase receipt from mobile app.
      *
-     * After a purchase is made via RevenueCat SDK on mobile,
-     * the app calls this to confirm the backend has received the webhook.
-     * If not yet received, we create a pending subscription record.
+     * After a purchase is made via RevenueCat SDK on mobile, the app
+     * calls this to confirm the backend has received the webhook. If
+     * the webhook hasn't arrived yet (race condition between IAP
+     * completion + RevenueCat → our webhook), we optimistically create
+     * a pending subscription so the user isn't bounced back to the
+     * paywall while we wait for RevenueCat to catch up.
      */
     public function verify(Request $request): JsonResponse
     {
@@ -50,9 +68,10 @@ class SubscriptionController extends Controller
         // If webhook already processed, just confirm
         if ($subscription && $subscription->isActive()) {
             return response()->json([
-                'verified'    => true,
-                'is_premium'  => true,
-                'message'     => 'Subscription already active.',
+                'verified'           => true,
+                'has_active_access'  => true,
+                'is_premium'         => true,
+                'message'            => 'Subscription already active.',
             ]);
         }
 
@@ -72,9 +91,10 @@ class SubscriptionController extends Controller
         $user->update(['is_premium' => true]);
 
         return response()->json([
-            'verified'    => true,
-            'is_premium'  => true,
-            'message'     => 'Subscription activated.',
+            'verified'           => true,
+            'has_active_access'  => true,
+            'is_premium'         => true,
+            'message'            => 'Subscription activated.',
         ]);
     }
 }
