@@ -21,7 +21,22 @@ use Illuminate\Support\Facades\Route;
 // Bare-host visit → admin login. No public website exists.
 Route::get('/', fn () => redirect('/admin/login'));
 
-// Catch any other accidental browser hit and bounce them too instead
-// of leaking a generic "404 Not Found" page that could fingerprint
-// the framework.
+// ── Legal pages (public, required by Apple + Google review) ────────
+//
+// The mobile app's PaywallScreen links to these URLs — they MUST be
+// reachable without auth. Apple/Google reviewers also visit them
+// directly to verify the subscription terms before approving the app.
+// Effective date is the launch date — bump it whenever the legal text
+// changes so users can see when it was last revised.
+Route::view('/privacy-policy', 'legal.privacy', [
+    'effectiveDate' => 'April 27, 2026',
+])->name('legal.privacy');
+
+Route::view('/terms-of-service', 'legal.terms', [
+    'effectiveDate' => 'April 27, 2026',
+])->name('legal.terms');
+
+// Catch any other accidental browser hit and bounce them to admin
+// login instead of leaking a generic 404 that could fingerprint the
+// framework. The legal routes above are matched first.
 Route::fallback(fn () => redirect('/admin/login'));
