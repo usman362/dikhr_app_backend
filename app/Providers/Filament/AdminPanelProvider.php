@@ -27,9 +27,16 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            // ── Branding (no framework names visible) ──────────────
+            // brandName + favicon override Filament's defaults so the
+            // browser tab title is "Community Dhikr" instead of
+            // "Filament" and the panel doesn't fingerprint as Filament
+            // to a casual visitor. Emerald matches the mobile app so
+            // the admin panel feels like the same product.
             ->brandName('Community Dhikr')
+            ->favicon(asset('favicon.ico'))
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Emerald,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

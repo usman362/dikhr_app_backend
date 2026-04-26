@@ -25,6 +25,17 @@ return Application::configure(basePath: dirname(__DIR__))
             'active_access' => \App\Http\Middleware\EnsureActiveAccess::class,
         ]);
 
+        // Global stack — runs on EVERY response, web + api. Adds
+        // security headers + strips framework fingerprints (X-Powered-By
+        // etc.) so the server doesn't advertise what it's built with.
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
+        // Trust the X-Forwarded-* headers from the load balancer /
+        // reverse proxy in front of us — without this, $request->secure()
+        // is false even when the user came in over HTTPS, and the HSTS
+        // header above never gets emitted in production.
+        $middleware->trustProxies(at: '*');
+
         // API middleware stack
         $middleware->api(prepend: [
             \App\Http\Middleware\SanitizeInput::class,

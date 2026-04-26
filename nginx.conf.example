@@ -1,0 +1,88 @@
+# ─────────────────────────────────────────────────────────────────────
+#  Example nginx server block for production
+# ─────────────────────────────────────────────────────────────────────
+#
+# Copy/adapt to /etc/nginx/sites-available/community-dhikr.conf and
+# symlink into sites-enabled. Mirrors the .htaccess hardening so the
+# server doesn't fingerprint as Laravel/PHP.
+#
+# Replace `your-domain.com` and the SSL cert paths with the real ones
+# from Certbot / your TLS provider.
+
+server {
+    listen 80;
+    server_name your-domain.com;
+    # Force HTTPS — never serve the API over plain HTTP in production.
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+    root /var/www/community-dhikr/public;
+    index index.php;
+
+    # ── TLS ────────────────────────────────────────────────────────
+    ssl_certificate     /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # ── Hide identifying headers ───────────────────────────────────
+    # `server_tokens off` only hides the version, not the word "nginx".
+    # Combined with the `more_clear_headers` directive (requires
+    # ngx_headers_more module) we can drop the Server header entirely.
+    server_tokens off;
+    # Uncomment if ngx_headers_more is installed:
+    # more_clear_headers Server;
+    # more_set_headers "Server: web";
+
+    # Strip PHP fingerprinting at the reverse-proxy layer too.
+    fastcgi_hide_header X-Powered-By;
+
+    # ── Security headers (mirrors SecurityHeaders middleware) ─────
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header X-Permitted-Cross-Domain-Policies "none" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=(), payment=(), usb=()" always;
+
+    # ── Block sensitive files ──────────────────────────────────────
+    location ~ /\. { deny all; access_log off; log_not_found off; }
+    location ~* \.(env|log|md|json|lock|yml|yaml|sql|sh|bak|swp|sqlite|sqlite3)$ {
+        deny all; access_log off; log_not_found off;
+    }
+
+    # ── Front controller ───────────────────────────────────────────
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        # Only index.php should ever execute — block any other PHP
+        # script that somehow lands in public/. Comment out if you
+        # have a legitimate reason to allow other entry points.
+        if ($uri !~ "^/index\.php$") { return 404; }
+
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;  # adjust PHP version
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+
+    # ── Reverb WebSocket reverse proxy ─────────────────────────────
+    # If Laravel Reverb is exposed publicly, proxy /reverb/* to the
+    # Reverb daemon (port 8080 by default). Otherwise mobile clients
+    # can connect directly to the Reverb port over wss://.
+    location /reverb {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

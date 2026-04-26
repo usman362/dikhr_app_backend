@@ -1,3 +1,15 @@
+# ─────────────────────────────────────────────────────────────────────
+#  Apache hardening for the public/ document root
+# ─────────────────────────────────────────────────────────────────────
+#
+# Two goals here:
+#   1. Hide what's running. The default Server header on Apache leaks
+#      the version + module list (Apache/2.4.62 (Debian) PHP/8.3 ...).
+#      Production-grade sites strip that.
+#   2. Block direct access to anything that isn't meant to be served.
+#      Hidden files, source files, lock files, and CI configs that
+#      sometimes leak via misconfigured deployments.
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
@@ -23,3 +35,46 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# ── Strip identification headers ────────────────────────────────────
+<IfModule mod_headers.c>
+    # Hide the PHP version that PHP itself emits if `expose_php = On`
+    # in php.ini. The SecurityHeaders middleware also strips this at
+    # the framework layer; this is belt-and-braces for cases where the
+    # request is served before middleware runs (static assets etc.).
+    Header always unset X-Powered-By
+    Header unset X-Powered-By
+    Header always unset Server
+    Header set Server "web"
+</IfModule>
+
+# Tell Apache to send a minimal Server header. ServerTokens belongs in
+# the main server config (not .htaccess), so this line is a no-op on
+# most installs — but documenting the requirement here as a reminder.
+# In your Apache main config: `ServerTokens Prod` and `ServerSignature Off`.
+
+# ── Block access to sensitive files ─────────────────────────────────
+# Even though Laravel's public/ should never contain these, defensive
+# rules guard against accidental copies, leftover deployment files,
+# or symlinks that escape the document root.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "(?i)\.(env|env\..*|log|md|json|lock|yml|yaml|sql|sh|bak|swp|sqlite|sqlite3|composer\.(json|lock)|package\.(json|lock))$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "(?i)^(composer\.(json|lock)|package\.(json|lock)|yarn\.lock|webpack\.mix\.js|vite\.config\.js|artisan|server\.php|phpunit\.xml|README\.md|LICENSE)$">
+    Require all denied
+</FilesMatch>
+
+# Block direct access to PHP files in subdirectories (only index.php
+# at the root should be reachable). Stops drive-by attacks that try
+# `/vendor/.../some-debug-script.php` style requests.
+<FilesMatch "(?i)^(.+)\.php$">
+    Require all denied
+</FilesMatch>
+<Files "index.php">
+    Require all granted
+</Files>
