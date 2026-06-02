@@ -7,19 +7,25 @@ use Illuminate\Support\Facades\Route;
 | Web Routes
 |--------------------------------------------------------------------------
 |
-| The backend has no public website — it's an API-only server with an
-| admin panel mounted at /admin. Hitting the bare host should send the
-| visitor straight to the admin login (no marketing page, no framework
-| branding).
+| Public surface for emhai.dk. Three categories live here:
 |
-| Mobile clients never hit web routes (they only use /api/v1/*), so
-| anything here is for browser visits — currently just redirecting to
-| the admin panel.
+|   1. Marketing homepage  (`/`)      — visible to anyone landing on the
+|      bare host. Replaces the old admin-login redirect so App Store /
+|      Play Store reviewers (and real users) get a real product page,
+|      not a backend login form.
+|   2. Legal pages         (`/privacy-policy`, `/terms-of-service`) —
+|      linked from the in-app paywall + required by Apple/Google review.
+|   3. Catch-all fallback                — anything else bounces to the
+|      admin login, the only other public surface this host serves.
+|
+| Mobile clients NEVER hit these routes; they only use `/api/v1/*`, the
+| admin panel lives at `/admin/*`, and the RevenueCat webhook hits
+| `/api/v1/webhooks/revenuecat`. All of those remain untouched.
 |
 */
 
-// Bare-host visit → admin login. No public website exists.
-Route::get('/', fn () => redirect('/admin/login'));
+// Marketing homepage.
+Route::view('/', 'home')->name('home');
 
 // ── Legal pages (public, required by Apple + Google review) ────────
 //
