@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="index,follow">
+    <title>EMH AI</title>
+    <meta name="description" content="EMH AI — building thoughtful digital products. Website coming soon.">
+    <meta property="og:title" content="EMH AI">
+    <meta property="og:description" content="Building thoughtful digital products. Website coming soon.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://emhai.dk/">
+    <link rel="icon" href="/favicon.ico">
+    <style>
+        :root {
+            --accent: #1F3A5F;
+            --accent-light: #3B5A82;
+            --accent-dark: #0F2440;
+            --accent-soft: #E8EEF6;
+            --gold: #D4A437;
+            --bg: #FAFAF7;
+            --text: #14181F;
+            --text-soft: #4B5563;
+            --hint: #6B7280;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                         'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 24px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Soft ambient background gradients */
+        body::before,
+        body::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::before {
+            top: -20%;
+            left: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(31,58,95,0.10), transparent 65%);
+        }
+        body::after {
+            bottom: -20%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(212,164,55,0.08), transparent 65%);
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            max-width: 560px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo-mark {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 28px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--accent-dark) 0%, var(--accent) 60%, var(--accent-light) 100%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 800;
+            font-size: 30px;
+            letter-spacing: -0.03em;
+            box-shadow:
+                0 14px 32px rgba(15,36,64,0.30),
+                0 4px 10px rgba(15,36,64,0.12),
+                inset 0 1px 0 rgba(255,255,255,0.18);
+        }
+
+        h1 {
+            font-size: clamp(38px, 6vw, 52px);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.05;
+            margin-bottom: 16px;
+        }
+        h1 .accent {
+            background: linear-gradient(120deg, var(--accent) 0%, var(--accent-light) 50%, var(--gold) 115%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .tagline {
+            font-size: clamp(15px, 1.7vw, 17.5px);
+            color: var(--text-soft);
+            max-width: 440px;
+            margin: 0 auto 28px;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 16px;
+            background: #fff;
+            border: 1px solid rgba(31,58,95,0.10);
+            color: var(--accent);
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+            margin-bottom: 36px;
+        }
+        .status::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212,164,55,0.20);
+            animation: pulse 2.4s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(212,164,55,0.45); }
+            50%      { box-shadow: 0 0 0 7px rgba(212,164,55,0); }
+        }
+
+        .contact {
+            margin-top: 8px;
+            color: var(--text-soft);
+            font-size: 14px;
+        }
+        .contact a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .contact a:hover { text-decoration: underline; }
+
+        footer {
+            position: absolute;
+            bottom: 24px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: var(--hint);
+            font-size: 12px;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <div class="logo-mark">E</div>
+
+        <div class="status">Website Coming Soon</div>
+
+        <h1>EMH <span class="accent">AI</span></h1>
+
+        <p class="tagline">
+            Building thoughtful digital products. Our company website is on
+            the way — for now, feel free to reach out directly.
+        </p>
+
+        <div class="contact">
+            Contact us at <a href="mailto:info@emhai.dk">info@emhai.dk</a>
+        </div>
+    </main>
+
+    <footer>
+        &copy; 2026 EMH AI · Denmark
+    </footer>
+</body>
+</html>
